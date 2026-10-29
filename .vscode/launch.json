@@ -7,7 +7,7 @@
             "request": "launch",
             "servertype": "openocd",
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/build/Cmake_2_Projects_Template.elf",
+            "executable": "${workspaceFolder}/build/${workspaceFolderBasename}.elf",
             "configFiles": [
                 "interface/cmsis-dap.cfg",
                 "target/stm32h7x.cfg"
@@ -27,7 +27,7 @@
             "request": "launch",
             "servertype": "openocd",
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/build/Cmake_2_Projects_Template.elf",
+            "executable": "${workspaceFolder}/build/${workspaceFolderBasename}.elf",
             "configFiles": [
                 "interface/stlink.cfg",
                 "target/stm32h7x.cfg"

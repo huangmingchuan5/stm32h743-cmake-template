@@ -19,7 +19,14 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Set the project name
-set(CMAKE_PROJECT_NAME Cmake_2_Projects_Template)
+# ---------------------------------------------------------------------------
+# 工程名自动取「当前目录名」，复制模板到新目录后无需修改任何文件：
+#   Cmake_3_BASE_TIMER/  ->  CMAKE_PROJECT_NAME = Cmake_3_BASE_TIMER
+#   产物同步为 build/Cmake_3_BASE_TIMER.elf，run.sh / flash 会自动跟随
+# 如需固定名字，把下面两行换成 set(CMAKE_PROJECT_NAME 你的名字)
+# ---------------------------------------------------------------------------
+get_filename_component(_AUTO_PROJECT_NAME "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
+set(CMAKE_PROJECT_NAME "${_AUTO_PROJECT_NAME}")
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)

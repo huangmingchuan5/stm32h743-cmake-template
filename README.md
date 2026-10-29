@@ -144,6 +144,55 @@ clangd --check=Core/Src/main.c \
 # 输出 All checks completed, 0 errors 即正常
 ```
 
+## 从模板创建新工程
+
+工程名、产物名、烧录路径全部**自动跟随目录名**，复制后不需要修改任何文件。
+
+```bash
+# 1. 复制模板（不要带 build/ 和 .git/）
+cp -r Cmake_2_Projects_Template Cmake_4_MY_PROJECT
+cd Cmake_4_MY_PROJECT
+
+# 2. 重置继承的 git 历史与构建缓存
+./tools/new_project.sh
+
+# 3. 直接开始写代码
+./run.sh          # 产物：build/Cmake_4_MY_PROJECT.elf
+./run.sh flash    # 编译并烧录
+```
+
+自动命名覆盖的位置：
+
+| 位置 | 取值方式 |
+|---|---|
+| `CMakeLists.txt` | `get_filename_component(... NAME)` 取目录名 |
+| `run.sh` | `ELF_NAME="$(basename "$(pwd)")"` |
+| `flash` / `flash-reset` | Tcl `[file tail [pwd]]` |
+| `.vscode/launch.json` | `${workspaceFolderBasename}` |
+| 产物 | `build/<目录名>.elf` / `.bin` / `.hex` |
+
+`tools/new_project.sh` 会删除 `build/`、重置继承的 `.git`（模板历史与 remote 一并解除）、清理 `.workbuddy/`。它拒绝在模板目录本身执行，避免误删。
+
+复制后仍需人工处理两件事：
+
+1. **`.ioc` 工程名**——在 CubeMX 里改 Project Name 并另存为 `<新名字>.ioc`，否则多个工程共用同一个 ioc 会互相覆盖
+2. **手动补的 HAL 源文件**——不同工程的外设配置不同，不能照抄，见下一节
+
+## CubeMX 未启用的外设
+
+如果 `User/` 下的 BSP 用到 CubeMX 里没配置的外设（本模板的 USART1、ADC1 就是这种情况），需要手动补两处：
+
+1. `Core/Inc/stm32h7xx_hal_conf.h` 取消 `HAL_xxx_MODULE_ENABLED` 的注释
+2. 根 `CMakeLists.txt` 的 `target_sources` 追加对应 `stm32h7xx_hal_xxx.c`
+
+**添加源文件前必须先检查是否已存在**：
+
+```bash
+grep -oE "stm32h7xx_hal_[a-z_]+\.c" cmake/stm32cubemx/CMakeLists.txt
+```
+
+若 CubeMX 已启用该外设，列表里就会有对应文件；再手动加一次会导致 `multiple definition` 链接错误。
+
 ## 内置 BSP
 
 `User/` 下包含一组可直接使用的基础模块，接口沿用野火教程风格（无参宏、`xxx_Config()`），实现为独立编写：

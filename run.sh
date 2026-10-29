@@ -19,7 +19,9 @@ command -v ninja >/dev/null 2>&1 || \
 command -v openocd >/dev/null 2>&1 || \
     export PATH="$TOOLCHAIN_ROOT/xpack-openocd/0.12.0-7/xpack-openocd-0.12.0-7/bin:$PATH"
 
-ELF_NAME="Cmake_2_Projects_Template"
+# 产物名自动跟随目录名，与 CMakeLists.txt 里的 CMAKE_PROJECT_NAME 保持一致，
+# 复制模板到新目录后无需修改本脚本
+ELF_NAME="$(basename "$(pwd)")"
 BUILD_DIR="build"
 
 # ---------- 全新构建 ----------

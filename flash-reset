@@ -18,4 +18,4 @@ source [find target/stm32h7x.cfg]
 adapter speed 500
 reset_config srst_only srst_nogate connect_assert_srst
 
-program build/Cmake_2_Projects_Template.elf verify reset exit
+program build/[file tail [pwd]].elf verify reset exit

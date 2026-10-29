@@ -30,8 +30,10 @@ adapter speed 1800
 # adapter speed 500
 
 # ---------- 4. 烧录 ----------
+# 产物名自动跟随工程目录名（对应 CMakeLists.txt 的 CMAKE_PROJECT_NAME），
+# 复制模板到新目录后无需修改本文件。
 # 相对路径基于执行 openocd 时的当前目录，因此必须在工程根目录运行
-program build/Cmake_2_Projects_Template.elf verify reset exit
+program build/[file tail [pwd]].elf verify reset exit
 
 # 烧录 bin（bin 无段信息，必须指定起始地址）
-# program build/Cmake_2_Projects_Template.bin 0x08000000 verify reset exit
+# program build/[file tail [pwd]].bin 0x08000000 verify reset exit
