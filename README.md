@@ -172,6 +172,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 
 ## 已知限制
 
+- **UART 是手动接入的**：CubeMX 里没有配置 USART，因此本模板手动做了三件事——在 `Core/Inc/stm32h7xx_hal_conf.h` 取消注释 `HAL_UART_MODULE_ENABLED`、在根 `CMakeLists.txt` 追加 `stm32h7xx_hal_uart.c`、在 `User/` 下提供 `bsp_usart`。若之后在 CubeMX 中重新生成代码，`stm32h7xx_hal_conf.h` 会被覆盖导致 UART 重新失效，建议直接在 CubeMX 里启用 USART1 再生成，之后删除根 `CMakeLists.txt` 里那行手动补充的 `hal_uart.c`。
 - **Drivers 已裁剪**：为控制仓库体积，`.gitignore` 排除了 `CMSIS/DSP`（179 MB）、`CMSIS/NN`、`RTOS`、`RTOS2`、`Device/ST/STM32H7xx/Source`，以及除 H743 外的 21 个型号头文件。克隆后可直接编译；若需切换到其它 H7 型号或使用 DSP 库，请从 CubeMX 固件包补回对应文件。
 - **烧录会擦除 Flash 尾部**：OpenOCD 按 bank 边界对齐擦除，日志中的 `Adding extra erase range` 属正常行为。若在 Flash 尾部存放参数，需要自行调整链接脚本或烧录范围。
 - **工程名与仓库名不一致**：CubeMX 工程名仍是 `Cmake_2_Projects_Template`，产物为 `build/Cmake_2_Projects_Template.elf`。改名需同步 `run.sh`、`flash`、`flash-reset`、`launch.json` 四处。
