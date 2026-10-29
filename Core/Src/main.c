@@ -22,6 +22,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "bsp_led.h"
+#include "bsp_usart.h"
+#include "bsp_key.h"
+#include "bsp_delay.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,7 +94,12 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-  LED_GPIO_Config();
+  LED_GPIO_Config();     /* RGB LED：PB0 / PB1 / PA3 */
+  UARTx_Config();        /* USART1：PA9 / PA10，115200-8-N-1 */
+  BSP_DelayInit();       /* DWT 周期计数器，供 BSP_DelayUs 使用 */
+  Key_GPIO_Config();     /* 按键：KEY1=PA0，KEY2=PC13 */
+
+  printf("\r\nSTM32H743 CMake template started.\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -103,16 +111,22 @@ int main(void)
     /* USER CODE BEGIN 3 */
     /* 野火风格：混色宏是无参宏，调用时不加括号，末尾加分号 */
     LED_RED;
-    HAL_Delay(10000);
+    HAL_Delay(500);
 
     LED_GREEN;
-    HAL_Delay(501000);
+    HAL_Delay(500);
 
     LED_BLUE;
     HAL_Delay(500);
 
     LED_YELLOW;
     HAL_Delay(500);
+
+    /* 按键演示：消抖与等待释放都在 Key_Scan 内部，按下期间会阻塞 */
+    if (Key_Scan(KEY1_GPIO_PORT, KEY1_PIN) == KEY_ON)
+    {
+        printf("KEY1 pressed\r\n");
+    }
   }
   /* USER CODE END 3 */
 }

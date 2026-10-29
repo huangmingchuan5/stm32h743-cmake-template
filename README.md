@@ -144,6 +144,26 @@ clangd --check=Core/Src/main.c \
 # 输出 All checks completed, 0 errors 即正常
 ```
 
+## 内置 BSP
+
+`User/` 下包含一组可直接使用的基础模块，接口沿用野火教程风格（无参宏、`xxx_Config()`），实现为独立编写：
+
+| 模块 | 文件 | 资源占用 | 说明 |
+|---|---|---|---|
+| RGB LED | `bsp_led.h/.c` | PB0(红) / PB1(绿) / PA3(蓝) | 共阳接法，低电平点亮；提供 `LED_RED`、`LED_GREEN`、`LED_BLUE`、`LED_YELLOW` 等混色宏 |
+| 串口 | `bsp_usart.h/.c` | USART1，PA9(TX) / PA10(RX) | 115200-8-N-1，已把 `printf` / `scanf` 重定向到串口 |
+| 按键 | `bsp_key.h/.c` | KEY1=PA0，KEY2=PC13 | 10 ms 软件消抖，`Key_Scan()` 内部等待按键释放 |
+| 微秒延时 | `bsp_delay.h/.c` | DWT CYCCNT | 基于内核周期计数器，**不重定义** `HAL_GetTick`，不破坏 `HAL_Delay` |
+| MPU 配置 | `bsp_mpu.h/.c` | — | 来自野火 **H745 双核**例程，H743 单核下与 CubeMX 生成的 `MPU_Config()` 功能重复，可删除 |
+
+`main()` 当前行为：
+
+1. 依次调用 `LED_GPIO_Config()`、`UARTx_Config()`、`BSP_DelayInit()`、`Key_GPIO_Config()`
+2. 串口输出 `STM32H743 CMake template started.`
+3. 循环显示 红 → 绿 → 蓝 → 黄（各 500 ms），同时扫描 KEY1，按下时打印 `KEY1 pressed`
+
+`bsp_mpu.c` 未在 `main()` 中调用，其符号已被 `--gc-sections` 丢弃，不会进入固件，保留仅作参考。
+
 ## 新增 BSP 文件
 
 `User/Src/*.c` 由 `file(GLOB_RECURSE ... CONFIGURE_DEPENDS)` 自动收集，**新增文件不需要改 CMakeLists**。头文件放在 `User/Inc/`，已在 `target_include_directories` 中。
