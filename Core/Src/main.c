@@ -1,183 +1,97 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
+#include "stm32h7xx.h"
 #include "main.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 #include "bsp_led.h"
-#include "bsp_usart.h"
 #include "bsp_key.h"
-/* USER CODE END Includes */
+#include "core_delay.h"
+#include "bsp_mpu.h"
+#include "bsp_usart.h"
+#include "bsp_adc.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
 
-/* USER CODE END PTD */
+extern __IO uint32_t ADC_ConvertedValue;
+__IO uint16_t ADC_ConvertedValueLocal[2];
+float ADC_vol[2];
 
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
+/* 函数定义在本文件末尾，需前置声明 */
 void SystemClock_Config(void);
-static void MPU_Config(void);
-static void MX_GPIO_Init(void);
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
+  * @brief  主函数
   */
 int main(void)
 {
+	/* HAL_Init() 必须最先调用：
+	   它负责 FLASH 预取 / 中断优先级分组，并调用 HAL_InitTick()。
+	   本工程的 core_delay.c 把 HAL_InitTick 重定向到 DWT 初始化，
+	   漏掉这一步 DWT 不会被使能，HAL_GetTick() 恒为 0，HAL_Delay() 会永久卡死。 */
+	HAL_Init();
 
-  /* USER CODE BEGIN 1 */
+	SystemClock_Config();
 
-  /* USER CODE END 1 */
+	UARTx_Config();
+	LED_GPIO_Config();
+	Key_GPIO_Config();
+	ADC_Init();
 
-  /* MPU Configuration--------------------------------------------------------*/
-  MPU_Config();
+	printf("\r\nSTM32H743 CMake template started.\r\n");
+	printf("ADC dual-mode sampling on PA4 (ADC1/ADC2 channel 4)\r\n");
+	
+	while(1)
+	{
+		HAL_Delay(100);
+		ADC_ConvertedValueLocal[0] = (uint16_t)ADC_ConvertedValue;
+		ADC_ConvertedValueLocal[1] = (uint16_t)((ADC_ConvertedValue&0xFFFF0000)>>16);
+		
+		ADC_vol[0] =(float)((uint16_t)ADC_ConvertedValueLocal[0]*3.3/65536); 
+		ADC_vol[1] =(float)((uint16_t)ADC_ConvertedValueLocal[1]*3.3/65536);  
 
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  /* USER CODE BEGIN 2 */
-  LED_GPIO_Config();     /* RGB LED：PB0 / PB1 / PA3 */
-  UARTx_Config();        /* USART1：PA9 / PA10，115200-8-N-1 */
-  Key_GPIO_Config();     /* 按键：KEY1=PA0，KEY2=PC13 */
-
-  /* 时基说明：User/Src/core_delay.c 把 HAL_InitTick / HAL_GetTick 重定向到 DWT，
-     HAL_Init() 时即完成 DWT 初始化，因此 HAL_Delay 可直接使用，无需额外初始化 */
-  printf("\r\nSTM32H743 CMake template started.\r\n");
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-    /* 野火风格：混色宏是无参宏，调用时不加括号，末尾加分号 */
-    LED_RED;
-    HAL_Delay(500);
-
-    LED_GREEN;
-    HAL_Delay(500);
-
-    LED_BLUE;
-    HAL_Delay(500);
-
-    LED_YELLOW;
-    HAL_Delay(500);
-
-    /* 按键演示：消抖与等待释放都在 Key_Scan 内部，按下期间会阻塞 */
-    if (Key_Scan(KEY1_GPIO_PORT, KEY1_PIN) == KEY_ON)
-    {
-        printf("KEY1 pressed\r\n");
-    }
-  }
-  /* USER CODE END 3 */
+    printf("\r\n The current AD value = 0x%08X \r\n", ADC_ConvertedValueLocal[0]); 
+    printf("\r\n The current AD value = 0x%08X \r\n", ADC_ConvertedValueLocal[1]);     
+    //读取转换的AD值
+    printf("\r\n The current ADC1 value = %f V \r\n",ADC_vol[0]); 
+    printf("\r\n The current ADC2 value = %f V \r\n",ADC_vol[1]); 
+	}
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
+  * @brief  System Clock 配置（与工程模板完全一致，未改动）
+  *         SYSCLK = 480MHz，HCLK = 240MHz，APB1/2/3/4 = 120MHz
   */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Supply configuration update enable
-  */
+  /* 启用电源配置更新 */
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
-
-  /** Configure the main internal regulator output voltage
-  */
+  /* 配置主内稳压器输出电压 */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 5;
-  RCC_OscInitStruct.PLL.PLLN = 192;
-  RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 2;
-  RCC_OscInitStruct.PLL.PLLR = 2;
-  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_2;
-  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
-  RCC_OscInitStruct.PLL.PLLFRACN = 0;
+  RCC_OscInitStruct.HSEState       = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM       = 5;
+  RCC_OscInitStruct.PLL.PLLN       = 192;
+  RCC_OscInitStruct.PLL.PLLP       = 2;
+  RCC_OscInitStruct.PLL.PLLQ       = 2;
+  RCC_OscInitStruct.PLL.PLLR       = 2;
+  RCC_OscInitStruct.PLL.PLLRGE     = RCC_PLL1VCIRANGE_2;
+  RCC_OscInitStruct.PLL.PLLVCOSEL  = RCC_PLL1VCOWIDE;
+  RCC_OscInitStruct.PLL.PLLFRACN   = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    while(1);
   }
 
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                               |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.SYSCLKSource   = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.SYSCLKDivider  = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.AHBCLKDivider  = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_APB3_DIV2;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_APB1_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_APB2_DIV2;
@@ -185,102 +99,6 @@ void SystemClock_Config(void)
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
-    Error_Handler();
+    while(1);
   }
 }
-
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-
-  /* USER CODE END MX_GPIO_Init_1 */
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-
-  /*Configure GPIO pin : PB0 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-
-  /* USER CODE END MX_GPIO_Init_2 */
-}
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
- /* MPU Configuration */
-
-void MPU_Config(void)
-{
-  MPU_Region_InitTypeDef MPU_InitStruct = {0};
-
-  /* Disables the MPU */
-  HAL_MPU_Disable();
-
-  /** Initializes and configures the Region and the memory to be protected
-  */
-  MPU_InitStruct.Enable = MPU_REGION_ENABLE;
-  MPU_InitStruct.Number = MPU_REGION_NUMBER0;
-  MPU_InitStruct.BaseAddress = 0x0;
-  MPU_InitStruct.Size = MPU_REGION_SIZE_4GB;
-  MPU_InitStruct.SubRegionDisable = 0x87;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
-  MPU_InitStruct.AccessPermission = MPU_REGION_NO_ACCESS;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
-  MPU_InitStruct.IsShareable = MPU_ACCESS_SHAREABLE;
-  MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
-  MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
-
-  HAL_MPU_ConfigRegion(&MPU_InitStruct);
-  /* Enables the MPU */
-  HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-
-}
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
-}
-#ifdef USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-}
-#endif /* USE_FULL_ASSERT */

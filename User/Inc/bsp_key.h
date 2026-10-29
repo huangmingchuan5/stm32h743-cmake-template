@@ -18,7 +18,7 @@ extern "C" {
 #endif
 
 #include "main.h"
-
+#include "stm32h7xx_hal.h"
 /* KEY1：PA0（WK_UP） */
 #define KEY1_PIN                    GPIO_PIN_0
 #define KEY1_GPIO_PORT              GPIOA

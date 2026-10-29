@@ -3,7 +3,7 @@
 #include <stm32h7xx.h>
 #include <stdio.h>
 
-extern float ADC_vol;
+/* 电压值由 main.c 以数组形式定义（float ADC_vol[2]），此处不再重复声明单个 float */
 
 ADC_HandleTypeDef ADC_Handle;
 ADC_HandleTypeDef ADC_SlAVE_Handle;
