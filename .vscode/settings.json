@@ -28,6 +28,11 @@
     "files.autoSave": "afterDelay",
     "files.autoSaveDelay": 1000,
 
+    // ---------- 终端：本模板的脚本是 Bash 写的，默认终端必须是 Git Bash ----------
+    // Windows 下 VS Code 集成终端默认是 PowerShell，直接执行 ./run.sh 会报
+    // 「无法将“./run.sh”项识别为 cmdlet」；改成 Git Bash 后提示符由 PS> 变为 $
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
+
     // ---------- 其它 ----------
     "files.associations": {
         "*.ld": "linkerscript",

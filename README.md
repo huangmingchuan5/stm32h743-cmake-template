@@ -188,6 +188,30 @@ clangd --check=Core/Src/main.c \
 # 输出 All checks completed, 0 errors 即正常
 ```
 
+### 把默认终端设为 Git Bash
+
+本模板的脚本（`run.sh`、`tools/new_project.sh`）都是 Bash 脚本。Windows 下 VS Code 的集成终端默认是 **PowerShell**，直接执行会报错：
+
+```
+PS C:\...\stm32h743-cmake-template> ./run.sh
+./run.sh : 无法将“./run.sh”项识别为 cmdlet、函数、脚本文件或可运行程序的名称。
+```
+
+需要把默认终端配置文件改成 **Git Bash**：
+
+| 设置项 | 值 |
+|---|---|
+| `Terminal › Integrated › Default Profile: Windows` | `Git Bash` |
+
+两种设置方式：
+
+- **图形界面**：`Ctrl+,` 打开设置，搜索 `terminal.integrated.defaultProfile.windows`，下拉选择 `Git Bash`
+- **JSON**：本仓库的 `.vscode/settings.json` 已预置该项，clone 后重开终端即生效
+
+设置生效后，终端提示符会从 `PS>` 变成 `$`，此时 `./run.sh` 可以正常运行。
+
+若 VS Code 提示该项只能在用户设置中修改（部分版本对此项有作用域限制），在用户设置里改一次即可，不影响仓库内的其它配置。
+
 ## 编写代码
 
 ### 业务代码放哪里
