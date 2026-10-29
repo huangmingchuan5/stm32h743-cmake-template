@@ -186,12 +186,46 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 | 现象 | 原因与处理 |
 |---|---|
 | `Error: Can't find flash` | 不在工程根目录执行。`openocd -f flash` 只查当前目录，先 `cd` 回根目录 |
-| `Error connecting DP: cannot read IDR` | 优先查**目标板是否上电**，其次 GND 共地、SWDIO/SWCLK 是否接反。100 kHz 低速仍失败即为物理层问题 |
 | 代码全屏红波浪线 | clangd 未找到 `compile_commands.json`、缺 `--query-driver`、或索引缓存过期（`Ctrl+Shift+P → clangd: Restart Language Server`） |
 | 改了代码但现象不变 | 函数未被调用时被 `--gc-sections` 丢弃。用 `arm-none-eabi-nm <elf> \| grep <符号>` 与 FLASH 占用是否变化来判断 |
-| `LEDR_ON();` 报语法错误 | 野火风格 BSP 的 `LEDR_ON` 是**无参宏**，应写 `LEDR_ON;` 不带括号 |
+| `printf` 有调用但串口无输出 | GCC/newlib 下 `printf` 走 `_write` 而非 `fputc`。需实现 `_write` 覆盖 `syscalls.c` 的弱符号，`nm` 查应为 `T _write` |
+| 外部改动的文件在编辑器里看不到 | 编辑器有未保存修改时不会自动重载磁盘内容，详见 [编辑器与磁盘文件同步](#编辑器与磁盘文件同步) |
 | 链接报 `unrecognized option '--gC-sections'` | 从网页粘贴 CMake 代码时字符被替换，检查是否写成 `--gc-sections`、`-lm`、`${CMAKE_...}` |
 | `objcopy: 'xxx.elf': No such file` | 改过 CubeMX 工程名，但 `run.sh` / `flash` 里的 elf 名未同步 |
+
+## 编辑器与磁盘文件同步
+
+`.vscode/settings.json` 里开启了自动保存：
+
+```jsonc
+"files.autoSave": "afterDelay",
+"files.autoSaveDelay": 1000
+```
+
+这不是随手加的配置，而是为了解决一类高频问题：**外部程序（脚本、AI 助手、git checkout）修改了磁盘文件，但编辑器里看到的还是旧内容，一保存就把外部改动整段覆盖回去。**
+
+### 触发机制
+
+VS Code 对磁盘变化的处理规则：
+
+| 编辑器状态 | 磁盘文件被外部修改时 |
+|---|---|
+| 无未保存修改（干净） | 自动重载，立即看到新内容 |
+| **有未保存修改（dirty）** | **保留编辑器内容**，仅在标签页标一个圆点，绝不覆盖用户输入 |
+
+第二条是保护机制，代价是：只要缓冲区处于 dirty 状态，外部改动就永远显示不出来；此时按 `Ctrl+S`，会把外部改动整段冲掉。双方来回覆盖，表现为「明明改了，报错却还是旧的」。
+
+### 典型症状
+
+- `grep` 或命令行读到的内容，与编辑器里显示的不一致
+- 编译报错指向某一行，但那行在编辑器里看起来已经改好了
+- 编辑器显示的行号与磁盘真实行号相差若干行
+
+### 处理方式
+
+1. **日常**：依赖上面的 `autoSave`，缓冲区不会长期 dirty（该设置需重载窗口后生效）
+2. **手动**：`Ctrl+Shift+P` → `File: Revert File`，丢弃本地未保存内容，加载磁盘版本
+3. **确认**：`git status` 查看是否有意料之外的修改；提交前务必执行一次
 
 ## 已知限制
 
