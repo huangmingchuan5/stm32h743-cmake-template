@@ -39,17 +39,24 @@ int main(void)
 	while(1)
 	{
 		HAL_Delay(100);
+    LEDB_ON;
+    HAL_Delay(3000);
+    LEDB_OFF;
+    HAL_UART_Transmit(&UartHandle, (uint8_t*)"TEST\r\n", 7, 100);
 		ADC_ConvertedValueLocal[0] = (uint16_t)ADC_ConvertedValue;
 		ADC_ConvertedValueLocal[1] = (uint16_t)((ADC_ConvertedValue&0xFFFF0000)>>16);
 		
 		ADC_vol[0] =(float)((uint16_t)ADC_ConvertedValueLocal[0]*3.3/65536); 
 		ADC_vol[1] =(float)((uint16_t)ADC_ConvertedValueLocal[1]*3.3/65536);  
-
+    LEDG_ON;
+    HAL_Delay(1000);
+    LEDG_OFF;
     printf("\r\n The current AD value = 0x%08X \r\n", ADC_ConvertedValueLocal[0]); 
     printf("\r\n The current AD value = 0x%08X \r\n", ADC_ConvertedValueLocal[1]);     
     //读取转换的AD值
     printf("\r\n The current ADC1 value = %f V \r\n",ADC_vol[0]); 
     printf("\r\n The current ADC2 value = %f V \r\n",ADC_vol[1]); 
+    LED_WHITE;
 	}
 }
 

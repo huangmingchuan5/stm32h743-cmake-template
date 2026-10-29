@@ -54,6 +54,41 @@ int fputc(int ch, FILE *f)
 	return (ch);
 }
 
+/* ============================================================
+ * printf 重定向的关键：GCC(newlib) 与 Keil(ARMCC) 机制不同
+ *
+ *   Keil  : printf -> fputc()            —— 重写 fputc 即可
+ *   GCC   : printf -> _write() -> __io_putchar()  —— 重写 fputc 无效！
+ *
+ * CubeMX 生成的 syscalls.c 里 __io_putchar 只是一个 weak 声明，
+ * 工程中从未定义，因此 printf 的输出被静默丢弃。
+ * 下面两个函数覆盖 syscalls.c 的弱符号，缺一不可：
+ *   - _write        : newlib 的整块输出入口（一次发完，效率高）
+ *   - __io_putchar  : picolibc / starm_putc 路径的逐字节输出
+ * ============================================================ */
+
+int _write(int file, char *ptr, int len)
+{
+	(void)file;
+	int remain = len;
+
+	/* HAL_UART_Transmit 的 Size 是 uint16_t，这里按 65535 分段，避免超长截断 */
+	while (remain > 0)
+	{
+		uint16_t chunk = (remain > 0xFFFF) ? 0xFFFF : (uint16_t)remain;
+		HAL_UART_Transmit(&UartHandle, (uint8_t *)ptr, chunk, HAL_MAX_DELAY);
+		ptr += chunk;
+		remain -= chunk;
+	}
+	return len;   /* 返回原始长度，printf 据此判断写入是否成功 */
+}
+
+int __io_putchar(int ch)
+{
+	HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+	return ch;
+}
+
 ///重定向c库函数scanf到串口USARTx，重写向后可使用scanf、getchar等函数
 int fgetc(FILE *f)
 {	
