@@ -1,0 +1,48 @@
+# ---------- 构建产物 ----------
+build/
+*.elf
+*.bin
+*.hex
+*.map
+*.o
+*.obj
+*.d
+*.su
+
+# ---------- 编辑器 / IDE ----------
+.vscode/*.log
+*.code-workspace
+.cache/
+compile_commands.json
+
+# ---------- 工具与临时目录 ----------
+.workbuddy/
+_backup/
+
+# ---------- CubeMX 备份 ----------
+*.bak
+.mxproject.bak
+
+# ============================================================
+# Drivers 裁剪：仅排除本工程未引用的组件，本地文件保持不变
+# 目的：把仓库从 288 MB 降到约 20 MB，clone 后仍可直接编译
+# ============================================================
+
+# CMSIS-DSP 数学库（179 MB，本工程未引用）
+Drivers/CMSIS/DSP/
+
+# CMSIS 神经网络 / RTOS 组件（本工程未引用）
+Drivers/CMSIS/NN/
+Drivers/CMSIS/RTOS/
+Drivers/CMSIS/RTOS2/
+Drivers/CMSIS/Core/
+Drivers/CMSIS/Core_A/
+
+# 设备启动文件与模板（工程使用根目录的 startup_stm32h743xx.s）
+Drivers/CMSIS/Device/ST/STM32H7xx/Source/
+
+# 只保留 H743 型号头文件，其余 21 个型号不上传
+Drivers/CMSIS/Device/ST/STM32H7xx/Include/stm32h7*.h
+!Drivers/CMSIS/Device/ST/STM32H7xx/Include/stm32h743xx.h
+!Drivers/CMSIS/Device/ST/STM32H7xx/Include/stm32h7xx.h
+!Drivers/CMSIS/Device/ST/STM32H7xx/Include/system_stm32h7xx.h

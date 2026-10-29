@@ -1,0 +1,47 @@
+# 第三方组件声明 / Third-Party Notices
+
+本仓库包含 STMicroelectronics 与 Arm 提供的嵌入式软件组件。它们**不受**本仓库根目录 `LICENSE`（MIT）约束，而是遵循各自的许可证。下表列出每个组件的位置、版权方、许可证类型，以及仓库内可查证的依据文件。
+
+| 组件 | 仓库内位置 | 版权方 | 许可证 | 依据文件 |
+|---|---|---|---|---|
+| STM32H7 HAL 驱动 | `Drivers/STM32H7xx_HAL_Driver/` | STMicroelectronics | **BSD-3-Clause** | `Drivers/STM32H7xx_HAL_Driver/LICENSE.txt` |
+| CMSIS Core / Device | `Drivers/CMSIS/` | Arm Limited | **Apache-2.0** | `Drivers/CMSIS/LICENSE.txt` |
+| 启动文件 | `startup_stm32h743xx.s` | STMicroelectronics | **BSD-3-Clause** | 文件头版权声明；无独立 LICENSE 文件时按 ST 的 BSD-3-Clause 条款 |
+| 链接脚本 | `STM32H743XX_FLASH.ld` | STMicroelectronics | **BSD-3-Clause** | 同上，随 CubeMX 生成 |
+
+## 许可证全文
+
+- BSD-3-Clause: <https://opensource.org/licenses/BSD-3-Clause>
+- Apache-2.0: <https://www.apache.org/licenses/LICENSE-2.0>
+
+`Drivers/STM32H7xx_HAL_Driver/LICENSE.txt` 的原文明确写道：
+
+> If you received this software component outside of a package or without
+> applicable license terms, the terms of the BSD-3-Clause license shall apply.
+
+因此在本仓库（独立分发、非完整 STM32Cube 包）的场景下，HAL 驱动按 BSD-3-Clause 处理。
+
+## 关于裁剪
+
+为控制仓库体积，`.gitignore` 排除了部分未被本工程引用的 CMSIS 组件（DSP、NN、RTOS、RTOS2、Core、Core_A）以及除 STM32H743 之外的型号头文件。被排除的文件仍属上述第三方组件，同样遵循各自的许可证，只是不在本仓库内分发。
+
+## 合规提示
+
+再分发本仓库或其中包含的第三方组件时：
+
+1. 保留各目录下的 `LICENSE.txt` 与源文件中的版权声明，不要删除或修改
+2. 在衍生产品的文档中保留本声明
+3. Apache-2.0 组件（CMSIS）如被修改，需在文件中标注修改说明
+4. 不得暗示 STMicroelectronics 或 Arm 对本项目提供背书
+
+---
+
+# Third-Party Notices (English)
+
+This repository bundles embedded software components from STMicroelectronics and Arm. They are **not** covered by the MIT license at the repository root and remain under their own licenses:
+
+- `Drivers/STM32H7xx_HAL_Driver/` — BSD-3-Clause, © STMicroelectronics
+- `Drivers/CMSIS/` — Apache-2.0, © Arm Limited
+- `startup_stm32h743xx.s`, `STM32H743XX_FLASH.ld` — BSD-3-Clause, © STMicroelectronics
+
+License texts are available in the respective `LICENSE.txt` files and at the URLs listed above. When redistributing, keep all copyright notices and license files intact.
