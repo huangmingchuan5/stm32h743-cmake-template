@@ -154,7 +154,7 @@ clangd --check=Core/Src/main.c \
 | 串口 | `bsp_usart.h/.c` | USART1，PA9(TX) / PA10(RX) | 115200-8-N-1，已把 `printf` / `scanf` 重定向到串口 |
 | 按键 | `bsp_key.h/.c` | KEY1=PA0，KEY2=PC13 | 10 ms 软件消抖，`Key_Scan()` 内部等待按键释放 |
 | 延时 | `core_delay.h/.c` | DWT CYCCNT | 参考野火实现：重定义 `HAL_InitTick` / `HAL_GetTick` 到 DWT，系统时基不再依赖 SysTick |
-| ADC | `bsp_adc.h/.c` | PA4 → ADC1/ADC2 通道 4 | 双 ADC 交替模式 + DMA1_Stream1 循环搬运，**未在 `main()` 中启用**，需自行调用 `ADC_Init()` |
+| ADC | `bsp_adc.h/.c` | PC3 → ADC3_INP1（双焊盘引脚，需开 SYSCFG 模拟开关） | DMA1_Stream1 循环搬运，缓冲区放在 **D2 SRAM**（`.dma_buffer` 段），main 中已启用并打印电压 |
 | MPU 配置 | `bsp_mpu.h/.c` | — | 来自野火 **H745 双核**例程，H743 单核下与 CubeMX 生成的 `MPU_Config()` 功能重复，可删除 |
 
 `main()` 当前行为：
@@ -165,7 +165,9 @@ clangd --check=Core/Src/main.c \
 
 > 时基说明：`core_delay.c` 覆盖了 HAL 的两个弱函数，`HAL_Init()` 时即完成 DWT 初始化，所以 `HAL_Delay()` 仍然可用，无需额外初始化。
 >
-> `bsp_adc.c` 与 `bsp_mpu.c` 未在 `main()` 中调用，其符号被 `--gc-sections` 丢弃，不占用 Flash。ADC 的双 ADC + DMA 时序未做实机验证，接入前建议先示波器/串口确认采样值。
+> `bsp_mpu.c` 未在 `main()` 中调用，其符号被 `--gc-sections` 丢弃，不占用 Flash。
+>
+> **ADC 的 DMA 缓冲区必须放在 DMA 可访问的 SRAM**。本工程链接脚本把 `.bss` 放在 `DTCMRAM`（0x20000000），而 DMA1/DMA2 无法访问 DTCM/CCM，若把缓冲区当普通全局变量定义，DMA 写入无效、CPU 读回恒为 0。因此 `STM32H743XX_FLASH.ld` 新增了 `.dma_buffer` 段并映射到 `RAM_D2`（0x30000000），`ADC_ConvertedValue` 通过 `__attribute__((section(".dma_buffer")))` 放入该段，可用 `arm-none-eabi-nm` 验证地址确为 `0x30000000`。
 
 ## 新增 BSP 文件
 

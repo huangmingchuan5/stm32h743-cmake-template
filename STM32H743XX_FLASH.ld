@@ -226,6 +226,23 @@ SECTIONS
   } >DTCMRAM
   PROVIDE( __non_tls_bss_start = ADDR(.bss) );
 
+  /* ------------------------------------------------------------------
+   * DMA 缓冲区段
+   * DTCM(0x20000000) 是 CPU 私有 TCM，DMA1/DMA2 通过 AHB/AXI 访问不到，
+   * 若把 DMA 目的缓冲区放在 .bss（本脚本指向 DTCMRAM），DMA 写入无效，
+   * CPU 读回恒为 0。
+   * 这里单独开一段放到 D2 SRAM(0x30000000)，DMA 可正常访问。
+   * 用法： __IO uint16_t buf[2] __attribute__((section(".dma_buffer")));
+   * ------------------------------------------------------------------ */
+  .dma_buffer (NOLOAD) :
+  {
+    . = ALIGN(4);
+    *(.dma_buffer)
+    *(.dma_buffer*)
+    . = ALIGN(4);
+  } >RAM_D2
+
+
   PROVIDE( __bss_start = __tbss_start );
   PROVIDE( __bss_size = __bss_end - __bss_start );
 

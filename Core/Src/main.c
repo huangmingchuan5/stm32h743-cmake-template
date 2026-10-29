@@ -8,7 +8,8 @@
 #include "bsp_adc.h"
 
 
-extern __IO uint32_t ADC_ConvertedValue;
+/* ADC_ConvertedValue 已在 bsp_adc.h 中声明为 __IO uint16_t，此处不再重复声明，
+   否则会出现 conflicting types（uint32_t vs uint16_t） */
 __IO uint16_t ADC_ConvertedValueLocal[2];
 float ADC_vol[2];
 
@@ -20,43 +21,46 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-	/* HAL_Init() 必须最先调用：
-	   它负责 FLASH 预取 / 中断优先级分组，并调用 HAL_InitTick()。
-	   本工程的 core_delay.c 把 HAL_InitTick 重定向到 DWT 初始化，
-	   漏掉这一步 DWT 不会被使能，HAL_GetTick() 恒为 0，HAL_Delay() 会永久卡死。 */
-	HAL_Init();
+	uint32_t raw;
+	uint32_t mv;
 
+	/* 系统时钟初始化成 480MHz */
 	SystemClock_Config();
 
-	UARTx_Config();
+	/* LED 端口初始化 */
 	LED_GPIO_Config();
-	Key_GPIO_Config();
+
+	/* 串口1：115200 8-N-1 */
+	UARTx_Config();
+
+	/* ADC3 + DMA 初始化，初始化完就已经在后台连续采样 */
 	ADC_Init();
 
-	printf("\r\nSTM32H743 CMake template started.\r\n");
-	printf("ADC dual-mode sampling on PA4 (ADC1/ADC2 channel 4)\r\n");
-	
-	while(1)
+	printf("\r\n==== STM32H743 ADC3 单通道(DMA)采集电压 ====\r\n");
+	printf("通道：PC3 -> ADC3_INP1，分辨率 16 位，参考电压 3.3V\r\n");
+	printf("转动板上电位器，下面的电压值应随之变化\r\n\r\n");
+
+	while (1)
 	{
-		HAL_Delay(100);
-    LEDB_ON;
-    HAL_Delay(3000);
-    LEDB_OFF;
-    HAL_UART_Transmit(&UartHandle, (uint8_t*)"TEST\r\n", 7, 100);
-		ADC_ConvertedValueLocal[0] = (uint16_t)ADC_ConvertedValue;
-		ADC_ConvertedValueLocal[1] = (uint16_t)((ADC_ConvertedValue&0xFFFF0000)>>16);
-		
-		ADC_vol[0] =(float)((uint16_t)ADC_ConvertedValueLocal[0]*3.3/65536); 
-		ADC_vol[1] =(float)((uint16_t)ADC_ConvertedValueLocal[1]*3.3/65536);  
-    LEDG_ON;
-    HAL_Delay(1000);
-    LEDG_OFF;
-    printf("\r\n The current AD value = 0x%08X \r\n", ADC_ConvertedValueLocal[0]); 
-    printf("\r\n The current AD value = 0x%08X \r\n", ADC_ConvertedValueLocal[1]);     
-    //读取转换的AD值
-    printf("\r\n The current ADC1 value = %f V \r\n",ADC_vol[0]); 
-    printf("\r\n The current ADC2 value = %f V \r\n",ADC_vol[1]); 
-    LED_WHITE;
+		/* DMA 一直在后台更新这个变量，直接读即可 */
+		raw = ADC_ConvertedValue;
+		mv  = (uint32_t)raw * 3300U / 65535U;
+
+		printf("ADC = %5u (0x%04X)  Voltage = %u.%03u V\r\n",
+		       (unsigned)raw, (unsigned)raw,
+		       (unsigned)(mv / 1000U), (unsigned)(mv % 1000U));
+
+		/* 顺手用彩灯做个粗略指示：电压高于中点亮绿灯，否则亮红灯 */
+		if (raw > 32767U)
+		{
+			LED_GREEN;
+		}
+		else
+		{
+			LED_RED;
+		}
+
+		HAL_Delay(500);
 	}
 }
 
