@@ -24,7 +24,6 @@
 #include "bsp_led.h"
 #include "bsp_usart.h"
 #include "bsp_key.h"
-#include "bsp_delay.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -96,9 +95,10 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LED_GPIO_Config();     /* RGB LED：PB0 / PB1 / PA3 */
   UARTx_Config();        /* USART1：PA9 / PA10，115200-8-N-1 */
-  BSP_DelayInit();       /* DWT 周期计数器，供 BSP_DelayUs 使用 */
   Key_GPIO_Config();     /* 按键：KEY1=PA0，KEY2=PC13 */
 
+  /* 时基说明：User/Src/core_delay.c 把 HAL_InitTick / HAL_GetTick 重定向到 DWT，
+     HAL_Init() 时即完成 DWT 初始化，因此 HAL_Delay 可直接使用，无需额外初始化 */
   printf("\r\nSTM32H743 CMake template started.\r\n");
   /* USER CODE END 2 */
 

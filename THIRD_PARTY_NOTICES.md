@@ -14,6 +14,10 @@
 | CMSIS Core / Device | `Drivers/CMSIS/` | Arm Limited | **Apache-2.0** | `Drivers/CMSIS/LICENSE.txt` |
 | 启动文件 | `startup_stm32h743xx.s` | STMicroelectronics | **BSD-3-Clause** | 文件头版权声明；无独立 LICENSE 文件时按 ST 的 BSD-3-Clause 条款 |
 | 链接脚本 | `STM32H743XX_FLASH.ld` | STMicroelectronics | **BSD-3-Clause** | 同上，随 CubeMX 生成 |
+| 延时实现 | `User/Src/core_delay.c`、`User/Inc/core_delay.h` | 野火（fire） | 教学示例代码，版权归原作者 | 文件头 `@author fire` 及论坛/淘宝链接 |
+| MPU 配置 | `User/Src/bsp_mpu.c`、`User/Inc/bsp_mpu.h` | 野火（fire） | 教学示例代码，版权归原作者 | 文件头注明实验平台为野火 H745 开发板 |
+
+> `User/` 下的 `core_delay` 与 `bsp_mpu` 参考野火教程例程整理而来，版权归野火所有，仅作学习参考。若需商用或再分发，请自行替换为独立实现。`bsp_led`、`bsp_usart`、`bsp_key`、`bsp_adc` 的接口沿用了野火教程风格，但实现为独立编写。
 
 ## 许可证全文
 

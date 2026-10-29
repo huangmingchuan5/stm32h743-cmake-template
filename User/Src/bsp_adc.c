@@ -1,4 +1,5 @@
 #include "bsp_adc.h"
+#include "bsp_usart.h"
 #include <stm32h7xx.h>
 #include <stdio.h>
 
@@ -14,7 +15,7 @@ __IO uint32_t ADC_ConvertedValue = 0;
 static void ADC_GPIO_Mode_Config(void)
 {
 	RHEOSTAT_ADC_GPIO_CLK_ENABLE();
-	GPIO_InitTypeDef GPIO_InitStuct;
+	GPIO_InitTypeDef GPIO_InitStuct = {0};
 	GPIO_InitStuct.Mode = GPIO_MODE_ANALOG;
 	GPIO_InitStuct.Pin = RHEOSTAT_ADC_PIN;
 	GPIO_InitStuct.Pull = GPIO_NOPULL;
@@ -24,8 +25,8 @@ static void ADC_GPIO_Mode_Config(void)
 
 static void ADC_Mode_Config(void)
 {
-	ADC_ChannelConfTypeDef ADC_Config;
-    RCC_PeriphCLKInitTypeDef RCC_PeriphClkInit;  
+	ADC_ChannelConfTypeDef ADC_Config = {0};
+    RCC_PeriphCLKInitTypeDef RCC_PeriphClkInit = {0};  
     /*            配置ADC3时钟源             */
     /*    HSE Frequency(Hz)    = 25000000   */                                             
     /*         PLL_M                = 5     */
@@ -97,7 +98,7 @@ static void ADC_Mode_Config(void)
 	ADC_SlAVE_Handle.Init.OversamplingMode = DISABLE;
 	ADC_SlAVE_Handle.Init.Resolution = ADC_RESOLUTION_16B;
 	ADC_SlAVE_Handle.Init.ScanConvMode = DISABLE;
-	HAL_ADC_Init(&ADC_Handle);
+	HAL_ADC_Init(&ADC_SlAVE_Handle);
 	
     HAL_ADCEx_Calibration_Start(&ADC_SlAVE_Handle,ADC_CALIB_OFFSET,ADC_SINGLE_ENDED); 
 

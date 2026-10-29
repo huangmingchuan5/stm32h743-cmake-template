@@ -63,9 +63,11 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${USER_SOURCES}
 
-    # CubeMX 未启用 UART 时，手动补 HAL UART 驱动（User 下的 BSP 用到了 UART_HandleTypeDef）
-    # 若以后在 CubeMX 中启用 USARTx，该文件会被自动加入 cmake/stm32cubemx/CMakeLists.txt，此行可删除
+    # CubeMX 未启用 UART / ADC 时，手动补对应 HAL 驱动（User 下的 BSP 用到了这些外设）
+    # 若以后在 CubeMX 中启用对应外设，这些文件会被自动加入 cmake/stm32cubemx/CMakeLists.txt，本段可删除
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc_ex.c
 )
 
 # Add include paths
