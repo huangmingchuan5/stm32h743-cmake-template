@@ -19,30 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
--------------------------------------------------------------------------------
-SCOPE / 适用范围
--------------------------------------------------------------------------------
-
-The MIT license above applies only to the original work in this repository:
-the user code under Core/ (the sections between USER CODE markers), the BSP
-under User/, the CMake configuration, the shell scripts, the OpenOCD
-configuration files, and the documentation.
-
-It does NOT apply to third-party components included in this repository,
-including but not limited to:
-
-  - Drivers/STM32H7xx_HAL_Driver/   (STMicroelectronics, BSD-3-Clause)
-  - Drivers/CMSIS/                  (Arm Limited, Apache-2.0)
-  - startup_stm32h743xx.s           (STMicroelectronics, BSD-3-Clause)
-  - STM32H743XX_FLASH.ld            (STMicroelectronics, BSD-3-Clause)
-
-Those components remain under their own licenses. See THIRD_PARTY_NOTICES.md
-for the full list, the license of each component, and where the original
-license text can be found inside this repository.
-
-上述 MIT 许可仅适用于本仓库的原创部分：Core/ 中 USER CODE 区内的用户代码、
-User/ 下的 BSP、CMake 配置、shell 脚本、OpenOCD 配置以及文档。
-
-它不适用于仓库内的第三方组件（HAL 驱动、CMSIS、启动文件、链接脚本等），
-这些组件遵循各自的许可证，详见 THIRD_PARTY_NOTICES.md。
