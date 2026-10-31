@@ -25,6 +25,7 @@
 - **clangd** 代码补全与跳转，不依赖微软 C/C++ 插件的交叉编译配置
 - **Cortex-Debug** 断点调试，支持变量、寄存器、外设视图
 - **`User/` 目录** 独立存放 BSP，新增 `.c` 自动纳入构建
+- **HAL 驱动自动收录**：`Drivers/` 下 `stm32h7xx_hal_*.c` 自动进构建并与 CubeMX 清单去重，新增外设只改 `hal_conf.h`，不会再漏加 `.c`
 - **自动命名**：工程名 / 产物名 / 烧录路径全部跟随目录名
 - **一键脚本** `run.sh`：编译产出 `elf/bin/hex`，加参数直接烧录
 - 已开启 `printf` 浮点输出、`--gc-sections` 死代码消除、`--print-memory-usage`
@@ -147,7 +148,7 @@ cd Cmake_4_MY_PROJECT
 ### 复制后仍需人工处理
 
 - **`.ioc` 工程名**：在 CubeMX 里改 Project Name 并另存为 `<新名字>.ioc`。多个工程共用一个 ioc 会互相覆盖。
-- **手动补的 HAL 源文件**：不同工程的外设配置不同，见下方「CubeMX 未启用的外设」，不能照抄。
+- **手动补的 HAL 源文件**：默认已由 `HAL_AUTO_ALL_SOURCES` 自动处理，一般无需再改；见下方「新增外设」。
 
 ## VS Code 配置
 
@@ -220,7 +221,7 @@ PS C:\...\stm32h743-cmake-template> ./run.sh
 |---|---|---|
 | `Core/Src/main.c` 的 `USER CODE` 区 | 初始化调用、主循环 | 否，标记区内的内容保留 |
 | `User/Src/`、`User/Inc/` | 自己的 BSP / 驱动 | 否，CubeMX 不知道这个目录 |
-| 根 `CMakeLists.txt` | 构建配置、手动补的 HAL 源文件 | 否，只生成一次 |
+| 根 `CMakeLists.txt` | 构建配置、HAL 驱动源文件策略（自动收录 + 手动兜底） | 否，只生成一次 |
 | `cmake/stm32cubemx/` | CubeMX 的构建描述 | **是，每次 GENERATE CODE 整体重写** |
 
 ### 新增 BSP 文件
@@ -244,20 +245,38 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 )
 ```
 
-## CubeMX 未启用的外设
+## 新增外设（CubeMX 未启用的外设）
 
-如果 `User/` 下的 BSP 用到 CubeMX 里没配置的外设（例如串口、ADC），需要手动补两处：
+在 `User/` 下的 BSP 里用到 CubeMX 里没配置的外设（串口、ADC、LPTIM……）时，只需要一步：
 
 1. `Core/Inc/stm32h7xx_hal_conf.h`：取消对应 `HAL_xxx_MODULE_ENABLED` 的注释
-2. 根 `CMakeLists.txt` 的 `target_sources`：追加对应 `stm32h7xx_hal_xxx.c`
 
-**添加源文件前必须先检查是否已存在**：
+**驱动源文件不用管**。根 `CMakeLists.txt` 里的 `HAL_AUTO_ALL_SOURCES`（默认 ON）会自动把
+`Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_*.c` 全部纳入构建，再减去
+`cmake/stm32cubemx/CMakeLists.txt` 里已经编译过的部分（`*_template.c` 除外），
+所以不会再出现「忘了加 .c → 链接报 undefined reference」。
+
+原理补充：
+
+- `HAL_xxx_MODULE_ENABLED` 只决定头文件里**有没有函数声明**；
+- 对应的 `.c` 有没有参与编译，决定**有没有函数实现**；
+- 两者不一致时，编译能过、链接失败，报 `undefined reference to HAL_xxx_xxx`。
+
+未启用的模块，其 `.c` 会被预处理器编译成空文件，不占 Flash；启用了但没调用的函数会被
+`--gc-sections` 丢掉。实测额外收录 72 个驱动：Flash 占用 0 字节变化，全量编译约 12 秒。
+
+想回到「手动只加需要的」：
+
+```bash
+cmake -DHAL_AUTO_ALL_SOURCES=OFF ..
+```
+
+此时要自己在根 `CMakeLists.txt` 的 `else()` 分支里逐行追加 `stm32h7xx_hal_xxx.c`，
+并且追加前先查重（重复添加会产生 `multiple definition` 链接错误）：
 
 ```bash
 grep -oE "stm32h7xx_hal_[a-z_]+\.c" cmake/stm32cubemx/CMakeLists.txt
 ```
-
-若 CubeMX 已经启用了该外设，这个列表里就会有对应文件；再手动加一次会产生 `multiple definition` 链接错误。
 
 > 注意：`stm32h7xx_hal_conf.h` 也是 CubeMX 生成的文件，重新 GENERATE CODE 会被覆盖。更稳妥的做法是直接在 CubeMX 里启用该外设，让它自动生成配置。
 
@@ -422,6 +441,26 @@ MX_GPIO_Init();        /* 外设 */
 - **烧录会擦除 Flash 尾部**：OpenOCD 按 bank 边界对齐擦除，日志中的 `Adding extra erase range` 属正常行为
 - **`.ioc` 与工程名不强制关联**：本仓库的 ioc 仍是 CubeMX 的原始文件名，复制模板后请自行在 CubeMX 中重命名
 - **未验证项**：读保护（RDP）、双 Bank 选项字节、低功耗模式下的调试连接
+
+## 更新记录
+
+### 2026-10-31 · HAL 驱动自动收录
+
+- 根 `CMakeLists.txt` 新增 `HAL_AUTO_ALL_SOURCES`（默认 ON）：自动收录
+  `Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_*.c`，与 CubeMX 生成的
+  `STM32_Drivers` 清单做差集，并排除 `*_template.c`
+- 效果：新增外设只需在 `stm32h7xx_hal_conf.h` 打开 `HAL_xxx_MODULE_ENABLED`，
+  不会再出现「编译通过、链接报 `undefined reference to HAL_xxx_xxx`」
+- 实测：额外收录 72 个驱动，全新编译约 12 秒，Flash 占用无变化
+  （未启用模块编译为空文件，未调用函数被 `--gc-sections` 丢弃）
+- 保留 `-DHAL_AUTO_ALL_SOURCES=OFF` 回到手动模式，`else()` 分支即原来的逐行清单
+- README 重写「新增外设」章节，补充「声明来自 `hal_conf.h`、实现来自 `.c`」的排查思路
+
+### 2026-10-29
+
+- `feat`：工程名与产物名自动跟随目录名，复制即用
+- `fix`：ADC DMA 缓冲区移出 DTCM；USART 改用 `_write` 重定向 `printf`；`main` 补回 `HAL_Init`
+- `docs`：README 重写为通用模板文档；补充「默认终端设为 Git Bash」
 
 ## 许可证
 

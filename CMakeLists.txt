@@ -69,13 +69,72 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     ${USER_SOURCES}
+)
 
+# ============================================================
+# HAL 驱动源文件
+#
+# 默认策略（推荐）：自动收录 Drivers/STM32H7xx_HAL_Driver/Src 下所有
+#   stm32h7xx_hal_*.c，再和 CubeMX 生成的清单做差集，永远不会漏。
+#   未在 stm32h7xx_hal_conf.h 中打开的模块，其 .c 编译出来是空文件，
+#   既不占 Flash 也不增加运行时开销；未被调用的函数还会被 --gc-sections 丢掉。
+#
+# 想改回"手动只加需要的"：cmake -DHAL_AUTO_ALL_SOURCES=OFF ..
+#   注意手动模式下每启用一个新外设，都要在这里补一行对应驱动，
+#   否则链接会报 undefined reference to HAL_xxx_xxx。
+# ============================================================
+option(HAL_AUTO_ALL_SOURCES "自动编译 Drivers 下全部 HAL 驱动，避免漏加 .c" ON)
+
+if(HAL_AUTO_ALL_SOURCES)
+
+  file(GLOB _HAL_ALL_SOURCES CONFIGURE_DEPENDS
+       ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_*.c)
+
+  # CubeMX 已经编译过的文件，必须排除，否则 OBJECT 库 + 主程序各编译一份 → multiple definition
+  get_target_property(_HAL_CUBE_SOURCES STM32_Drivers SOURCES)
+  if(NOT _HAL_CUBE_SOURCES)
+    set(_HAL_CUBE_SOURCES "")
+  endif()
+
+  set(_HAL_CUBE_NORM "")
+  foreach(_f ${_HAL_CUBE_SOURCES})
+    get_filename_component(_f_abs "${_f}" ABSOLUTE)
+    list(APPEND _HAL_CUBE_NORM "${_f_abs}")
+  endforeach()
+
+  set(_HAL_EXTRA_SOURCES "")
+  foreach(_f ${_HAL_ALL_SOURCES})
+    get_filename_component(_f_abs "${_f}" ABSOLUTE)
+
+    # *_template.c 一律不要：msp_template 会和 Core/Src/stm32h7xx_hal_msp.c 冲突，
+    # timebase_*_template 会和 core_delay.c 里的 HAL_InitTick 冲突
+    if(_f_abs MATCHES "_template\\.c$")
+      continue()
+    endif()
+
+    list(FIND _HAL_CUBE_NORM "${_f_abs}" _hit)
+    if(_hit EQUAL -1)
+      list(APPEND _HAL_EXTRA_SOURCES "${_f_abs}")
+    endif()
+  endforeach()
+
+  if(_HAL_EXTRA_SOURCES)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${_HAL_EXTRA_SOURCES})
+    list(LENGTH _HAL_EXTRA_SOURCES _n)
+    message(STATUS "HAL: CubeMX 之外自动补充 ${_n} 个驱动源文件")
+  endif()
+
+else()
+
+  target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # CubeMX 未启用 UART / ADC 时，手动补对应 HAL 驱动（User 下的 BSP 用到了这些外设）
     # 若以后在 CubeMX 中启用对应外设，这些文件会被自动加入 cmake/stm32cubemx/CMakeLists.txt，本段可删除
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc_ex.c
-)
+  )
+
+endif()
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
